@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------
+   Brand tokens: change colours here and everything follows
+   (Tailwind classes + CSS). WebGL mirrors these in lib/brand.ts.
+------------------------------------------------------------------- */
+:root {
+  --page: 255 255 255;    /* #FFFFFF */
+  --tint: 244 248 255;    /* #F4F8FF */
+  --primary: 29 78 216;   /* #1D4ED8 */
+  --accent: 59 130 246;   /* #3B82F6 */
+  --glow: 147 197 253;    /* #93C5FD */
+  --navy: 11 31 75;       /* #0B1F4B */
+  --ink: 30 41 59;        /* #1E293B */
+  --muted: 100 116 139;   /* #64748B */
+  --line: 220 231 251;    /* blueprint hairline */
+
+  /* live values written every frame by MotionProvider */
+  --mx: 0;
+  --my: 0;
+  --svc-split: 0;
+  --footer-cube: 0;
+}
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  html.lenis, html.lenis body { height: auto; }
+  .lenis.lenis-smooth { scroll-behavior: auto !important; }
+  .lenis.lenis-stopped { overflow: hidden; }
+
+  body {
+    @apply bg-page font-sans text-ink antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  h1, h2, h3, h4 { @apply font-display text-navy; letter-spacing: -0.02em; }
+  ::selection { background: rgb(var(--glow) / 0.6); color: rgb(var(--navy)); }
+
+  :focus-visible {
+    outline: 3px solid rgb(var(--accent));
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+}
+
+@layer components {
+  /* Mouse parallax: every depth layer shifts by --d x pointer offset */
+  .mouse-layer {
+    position: absolute;
+    inset: 0;
+    transform: translate3d(calc(var(--mx) * var(--d, 0.3) * 48px), calc(var(--my) * var(--d, 0.3) * 32px), 0);
+    transition: transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+    will-change: transform;
+  }
+
+  /* 3D tilt surface with a moving light reflection */
+  .tilt {
+    --rx: 0deg; --ry: 0deg; --px: 50%; --py: 0%;
+    position: relative;
+    transform: perspective(1000px) rotateX(var(--rx)) rotateY(var(--ry)) translateZ(0);
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.5s;
+    will-change: transform;
+  }
+  .tilt::after {
+    content: '';
+    position: absolute; inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(420px circle at var(--px) var(--py), rgb(255 255 255 / 0.8), transparent 45%);
+    mix-blend-mode: soft-light;
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .tilt:hover::after { opacity: 1; }
+  .tilt-lift { transform: translateZ(40px); }
+
+  /* 3D buttons: a raised key with a pressed state and a light sweep */
+  .btn {
+    @apply relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-2xl px-6 py-3.5 font-display text-[0.95rem] font-semibold;
+    transform: perspective(600px) translateZ(0);
+    transition: transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.25s;
+  }
+  .btn::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 0.45) 50%, transparent 70%);
+    transform: translateX(-120%);
+    transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .btn:hover::before { transform: translateX(120%); }
+  .btn:hover { transform: perspective(600px) translateY(-2px) rotateX(6deg); }
+  .btn:active { transform: perspective(600px) translateY(2px); }
+  .btn:disabled { opacity: 0.7; cursor: progress; }
+
+  .btn-primary {
+    @apply bg-brand-gradient text-white;
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.35) inset, 0 5px 0 rgb(var(--navy)), 0 18px 30px -10px rgb(var(--primary) / 0.65);
+  }
+  .btn-primary:active { box-shadow: 0 1px 0 rgb(255 255 255 / 0.35) inset, 0 1px 0 rgb(var(--navy)), 0 8px 16px -8px rgb(var(--primary) / 0.6); }
+
+  .btn-ghost {
+    @apply border border-primary/20 bg-white/80 text-primary backdrop-blur;
+    box-shadow: 0 5px 0 rgb(var(--glow) / 0.8), 0 18px 30px -14px rgb(var(--primary) / 0.35);
+  }
+  .btn-ghost:active { box-shadow: 0 1px 0 rgb(var(--glow)), 0 6px 12px -8px rgb(var(--primary) / 0.3); }
+
+  /* Drafting frame that marks each place the cube comes to rest */
+  .blueprint-frame {
+    position: relative;
+    background-image:
+      linear-gradient(rgb(var(--primary) / 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--primary) / 0.07) 1px, transparent 1px);
+    background-size: 20px 20px;
+    border: 1px dashed rgb(var(--primary) / 0.28);
+    border-radius: 18px;
+  }
+  .corner { position: absolute; width: 14px; height: 14px; border-color: rgb(var(--primary)); border-style: solid; border-width: 0; }
+  .corner.tl { top: -1px; left: -1px; border-top-width: 2px; border-left-width: 2px; border-top-left-radius: 8px; }
+  .corner.tr { top: -1px; right: -1px; border-top-width: 2px; border-right-width: 2px; border-top-right-radius: 8px; }
+  .corner.bl { bottom: -1px; left: -1px; border-bottom-width: 2px; border-left-width: 2px; border-bottom-left-radius: 8px; }
+  .corner.br { bottom: -1px; right: -1px; border-bottom-width: 2px; border-right-width: 2px; border-bottom-right-radius: 8px; }
+
+  .field {
+    @apply w-full rounded-xl border border-line bg-white/90 px-4 py-3 text-ink placeholder:text-muted/70;
+    box-shadow: 0 1px 0 rgb(255 255 255) inset, 0 2px 0 rgb(var(--line));
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .field:focus { @apply border-accent outline-none; box-shadow: 0 0 0 4px rgb(var(--accent) / 0.18); }
+  .field[aria-invalid='true'] { border-color: #dc2626; }
+
+  .text-gradient { @apply bg-brand-gradient bg-clip-text text-transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  .mouse-layer { transform: none; }
+}
+@media (hover: none) {
+  .tilt { transform: none; }
+}
